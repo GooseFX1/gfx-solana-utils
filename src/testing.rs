@@ -9,9 +9,14 @@ use solana_sdk::{
     program_pack::Pack,
     signature::{Keypair, Signer},
     system_instruction::create_account,
+    system_program,
     transaction::Transaction,
 };
-use spl_token::{instruction::initialize_mint, state::Mint};
+use spl_associated_token_account::{create_associated_token_account, get_associated_token_address};
+use spl_token::{
+    instruction::{initialize_mint, mint_to as spl_mint_to},
+    state::Mint,
+};
 use std::env;
 
 static RPC_URL: &str = "https://api.devnet.solana.com";
@@ -90,4 +95,38 @@ pub fn create_token(authority: &Keypair) -> Pubkey {
     rpc.send_and_confirm_transaction(&tx)?;
 
     mint.pubkey()
+}
+
+#[throws(Error)]
+pub fn mint_to(mint: Pubkey, authority: &Keypair, to: Pubkey, amount: u64) {
+    let rpc = RpcClient::new(RPC_URL.to_string());
+    let (bhash, _) = rpc.get_recent_blockhash()?;
+
+    let mut ixs = vec![];
+
+    if rpc
+        .get_account(&get_associated_token_address(&to, &mint))?
+        .owner
+        == system_program::ID
+    {
+        ixs.push(create_associated_token_account(
+            &authority.pubkey(),
+            &to,
+            &mint,
+        ));
+    }
+
+    ixs.push(spl_mint_to(
+        &spl_token::ID,
+        &mint,
+        &to,
+        &authority.pubkey(),
+        &[&authority.pubkey()],
+        amount,
+    )?);
+
+    let tx =
+        Transaction::new_signed_with_payer(&ixs, Some(&authority.pubkey()), &[authority], bhash);
+
+    rpc.send_and_confirm_transaction(&tx)?;
 }
