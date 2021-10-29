@@ -1,3 +1,4 @@
+use crate::load_keypair;
 use anchor_lang::prelude::*;
 use anyhow::Error;
 use fehler::throws;
@@ -7,12 +8,11 @@ use solana_sdk::{
     commitment_config::{CommitmentConfig, CommitmentLevel},
     program_pack::Pack,
     signature::{Keypair, Signer},
-    signer::keypair::read_keypair_file,
     system_instruction::create_account,
     transaction::Transaction,
 };
 use spl_token::{instruction::initialize_mint, state::Mint};
-use std::{env, path::PathBuf};
+use std::env;
 
 static RPC_URL: &str = "https://api.devnet.solana.com";
 static ADMIN_WALLET: OnceCell<Keypair> = OnceCell::new();
@@ -22,12 +22,7 @@ static USER_WALLET: OnceCell<Keypair> = OnceCell::new();
 pub fn admin_wallet() -> &'static Keypair {
     ADMIN_WALLET.get_or_try_init(|| -> Result<_, Error> {
         if let Ok(wallet) = env::var("ADMIN_WALLET") {
-            let path = PathBuf::from(wallet);
-            let path = path.canonicalize().unwrap();
-
-            let keypair = read_keypair_file(&path).expect("Cannot read keyfile");
-
-            return Ok(keypair);
+            return Ok(load_keypair(&wallet));
         }
 
         let key = Keypair::new();
@@ -50,12 +45,7 @@ pub fn admin_wallet() -> &'static Keypair {
 pub fn user_wallet() -> &'static Keypair {
     USER_WALLET.get_or_try_init(|| -> Result<_, Error> {
         if let Ok(wallet) = env::var("USER_WALLET") {
-            let path = PathBuf::from(wallet);
-            let path = path.canonicalize().unwrap();
-
-            let keypair = read_keypair_file(&path).expect("Cannot read keyfile");
-
-            return Ok(keypair);
+            return Ok(load_keypair(&wallet));
         }
 
         let key = Keypair::new();

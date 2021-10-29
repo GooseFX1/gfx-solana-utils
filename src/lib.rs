@@ -33,10 +33,12 @@ pub fn sort_token_pair((token_a, token_b): (Pubkey, Pubkey)) -> (Pubkey, Pubkey)
 }
 
 pub fn load_keypair(src: &str) -> Keypair {
-    let path = PathBuf::from(src);
-    let path = path.canonicalize().unwrap();
+    let maybe_keypair = shellexpand::full(&src)
+        .map_err(|e| anyhow!(e))
+        .and_then(|path| -> Result<_, Error> { Ok(PathBuf::from(&*path).canonicalize()?) })
+        .and_then(|path| read_keypair_file(&path).map_err(|_| anyhow!("Cannot read keypair")));
 
-    match read_keypair_file(&path) {
+    match maybe_keypair {
         Ok(keypair) => keypair,
         Err(_) => Keypair::from_base58_string(src),
     }
