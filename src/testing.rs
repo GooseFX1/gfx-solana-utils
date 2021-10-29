@@ -1,15 +1,17 @@
 use crate::load_keypair;
 use anchor_lang::prelude::*;
 use anyhow::Error;
-use fehler::throws;
+use fehler::{throw, throws};
 use once_cell::sync::OnceCell;
-use solana_client::{rpc_client::RpcClient, rpc_config::RpcRequestAirdropConfig};
+use solana_client::{
+    client_error::ClientErrorKind, rpc_client::RpcClient, rpc_config::RpcRequestAirdropConfig,
+    rpc_request::RpcError,
+};
 use solana_sdk::{
     commitment_config::{CommitmentConfig, CommitmentLevel},
     program_pack::Pack,
     signature::{Keypair, Signer},
     system_instruction::create_account,
-    system_program,
     transaction::Transaction,
 };
 use spl_associated_token_account::{create_associated_token_account, get_associated_token_address};
@@ -104,22 +106,23 @@ pub fn mint_to(mint: Pubkey, authority: &Keypair, to: Pubkey, amount: u64) {
 
     let mut ixs = vec![];
 
-    if rpc
-        .get_account(&get_associated_token_address(&to, &mint))?
-        .owner
-        == system_program::ID
-    {
-        ixs.push(create_associated_token_account(
-            &authority.pubkey(),
-            &to,
-            &mint,
-        ));
+    if let Err(e) = rpc.get_account(&get_associated_token_address(&to, &mint)) {
+        match e.kind() {
+            ClientErrorKind::RpcError(RpcError::ForUser(_)) => {
+                ixs.push(create_associated_token_account(
+                    &authority.pubkey(),
+                    &to,
+                    &mint,
+                ));
+            }
+            _ => throw!(e),
+        }
     }
 
     ixs.push(spl_mint_to(
         &spl_token::ID,
         &mint,
-        &to,
+        &get_associated_token_address(&to, &mint),
         &authority.pubkey(),
         &[&authority.pubkey()],
         amount,
