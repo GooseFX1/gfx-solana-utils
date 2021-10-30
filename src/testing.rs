@@ -133,3 +133,22 @@ pub fn mint_to(mint: Pubkey, authority: &Keypair, to: Pubkey, amount: u64) {
 
     rpc.send_and_confirm_transaction(&tx)?;
 }
+
+#[throws(Error)]
+pub fn create_ata(mint: Pubkey, authority: &Keypair, to: Pubkey) {
+    let rpc = RpcClient::new(RPC_URL.to_string());
+    let (bhash, _) = rpc.get_recent_blockhash()?;
+
+    let tx = Transaction::new_signed_with_payer(
+        &[create_associated_token_account(
+            &authority.pubkey(),
+            &to,
+            &mint,
+        )],
+        Some(&authority.pubkey()),
+        &[authority],
+        bhash,
+    );
+
+    rpc.send_and_confirm_transaction(&tx)?;
+}
