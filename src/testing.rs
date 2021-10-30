@@ -26,40 +26,33 @@ static ADMIN_WALLET: OnceCell<Keypair> = OnceCell::new();
 static USER_WALLET: OnceCell<Keypair> = OnceCell::new();
 
 #[throws(Error)]
-pub fn admin_wallet() -> &'static Keypair {
+pub fn admin_wallet(airdrop: f64) -> &'static Keypair {
     ADMIN_WALLET.get_or_try_init(|| -> Result<_, Error> {
         if let Ok(wallet) = env::var("ADMIN_WALLET") {
             return Ok(load_keypair(&wallet));
         }
-
-        let key = Keypair::new();
-        let rpc = RpcClient::new(RPC_URL.to_string());
-        rpc.request_airdrop_with_config(
-            &key.pubkey(),
-            1000000000,
-            RpcRequestAirdropConfig {
-                commitment: Some(CommitmentConfig {
-                    commitment: CommitmentLevel::Finalized,
-                }),
-                recent_blockhash: None,
-            },
-        )?;
-        Ok(key)
+        create_wallet(airdrop)
     })?
 }
 
 #[throws(Error)]
-pub fn user_wallet() -> &'static Keypair {
+pub fn user_wallet(airdrop: f64) -> &'static Keypair {
     USER_WALLET.get_or_try_init(|| -> Result<_, Error> {
         if let Ok(wallet) = env::var("USER_WALLET") {
             return Ok(load_keypair(&wallet));
         }
+        create_wallet(airdrop)
+    })?
+}
 
-        let key = Keypair::new();
+#[throws(Error)]
+pub fn create_wallet(airdrop: f64) -> Keypair {
+    let key = Keypair::new();
+    if airdrop != 0f64 {
         let rpc = RpcClient::new(RPC_URL.to_string());
         rpc.request_airdrop_with_config(
             &key.pubkey(),
-            1000000000,
+            (airdrop * 1000000000.) as u64,
             RpcRequestAirdropConfig {
                 commitment: Some(CommitmentConfig {
                     commitment: CommitmentLevel::Finalized,
@@ -67,8 +60,8 @@ pub fn user_wallet() -> &'static Keypair {
                 recent_blockhash: None,
             },
         )?;
-        Ok(key)
-    })?
+    }
+    key
 }
 
 #[throws(Error)]
