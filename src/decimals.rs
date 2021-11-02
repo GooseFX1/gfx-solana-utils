@@ -1,11 +1,11 @@
 use num_traits::AsPrimitive;
 
-pub trait DecimalApply {
+pub trait ApplyDecimal {
     fn apply<N: AsPrimitive<f64>>(self, amount: N) -> u64;
     fn unapply<N: AsPrimitive<u64>>(self, amount: N) -> f64;
 }
 
-impl DecimalApply for u8 {
+impl ApplyDecimal for u8 {
     fn apply<N: AsPrimitive<f64>>(self, amount: N) -> u64 {
         (amount.as_() * 10f64.powf(self as f64)) as u64
     }

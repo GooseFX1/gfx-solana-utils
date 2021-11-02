@@ -1,7 +1,9 @@
+use crate::decimals::ApplyDecimal;
 use crate::load_keypair;
 use anchor_lang::prelude::*;
 use anyhow::Error;
 use fehler::{throw, throws};
+use num_traits::AsPrimitive;
 use once_cell::sync::OnceCell;
 use solana_client::{
     client_error::ClientErrorKind, rpc_client::RpcClient, rpc_config::RpcRequestAirdropConfig,
@@ -105,7 +107,7 @@ pub fn create_token(authority: &Keypair) -> Pubkey {
 }
 
 #[throws(Error)]
-pub fn mint_to(mint: Pubkey, authority: &Keypair, to: Pubkey, amount: u64) {
+pub fn mint_to<N: AsPrimitive<f64>>(mint: Pubkey, authority: &Keypair, to: Pubkey, amount: N) {
     let rpc = RpcClient::new(rpc_url().to_string());
     let (bhash, _) = rpc.get_recent_blockhash()?;
 
@@ -123,6 +125,8 @@ pub fn mint_to(mint: Pubkey, authority: &Keypair, to: Pubkey, amount: u64) {
             _ => throw!(e),
         }
     }
+    let mint_account = rpc.get_account(&mint)?;
+    let mint_account = Mint::unpack(&mint_account.data)?;
 
     ixs.push(spl_mint_to(
         &spl_token::ID,
@@ -130,7 +134,7 @@ pub fn mint_to(mint: Pubkey, authority: &Keypair, to: Pubkey, amount: u64) {
         &get_associated_token_address(&to, &mint),
         &authority.pubkey(),
         &[&authority.pubkey()],
-        amount,
+        mint_account.decimals.apply(amount),
     )?);
 
     let tx =
