@@ -21,9 +21,21 @@ use spl_token::{
 };
 use std::env;
 
-static RPC_URL: &str = "https://api.devnet.solana.com";
+static RPC_URL: OnceCell<String> = OnceCell::new();
 static ADMIN_WALLET: OnceCell<Keypair> = OnceCell::new();
 static USER_WALLET: OnceCell<Keypair> = OnceCell::new();
+
+pub fn set_rpc_url(url: &str) -> bool {
+    RPC_URL.set(url.to_string()).is_ok()
+}
+
+pub fn rpc_url() -> &'static str {
+    RPC_URL
+        .get_or_init(|| {
+            env::var("RPC_URL").unwrap_or_else(|_| "https://api.devnet.solana.com".to_string())
+        })
+        .as_str()
+}
 
 #[throws(Error)]
 pub fn admin_wallet(airdrop: f64) -> &'static Keypair {
@@ -49,7 +61,7 @@ pub fn user_wallet(airdrop: f64) -> &'static Keypair {
 pub fn create_wallet(airdrop: f64) -> Keypair {
     let key = Keypair::new();
     if airdrop != 0f64 {
-        let rpc = RpcClient::new(RPC_URL.to_string());
+        let rpc = RpcClient::new(rpc_url().to_string());
         rpc.request_airdrop_with_config(
             &key.pubkey(),
             (airdrop * 1000000000.) as u64,
@@ -66,7 +78,7 @@ pub fn create_wallet(airdrop: f64) -> Keypair {
 
 #[throws(Error)]
 pub fn create_token(authority: &Keypair) -> Pubkey {
-    let rpc = RpcClient::new(RPC_URL.to_string());
+    let rpc = RpcClient::new(rpc_url().to_string());
     let (bhash, _) = rpc.get_recent_blockhash()?;
 
     let mint = Keypair::new();
@@ -94,7 +106,7 @@ pub fn create_token(authority: &Keypair) -> Pubkey {
 
 #[throws(Error)]
 pub fn mint_to(mint: Pubkey, authority: &Keypair, to: Pubkey, amount: u64) {
-    let rpc = RpcClient::new(RPC_URL.to_string());
+    let rpc = RpcClient::new(rpc_url().to_string());
     let (bhash, _) = rpc.get_recent_blockhash()?;
 
     let mut ixs = vec![];
@@ -129,7 +141,7 @@ pub fn mint_to(mint: Pubkey, authority: &Keypair, to: Pubkey, amount: u64) {
 
 #[throws(Error)]
 pub fn create_ata(mint: Pubkey, authority: &Keypair, to: Pubkey) {
-    let rpc = RpcClient::new(RPC_URL.to_string());
+    let rpc = RpcClient::new(rpc_url().to_string());
     let (bhash, _) = rpc.get_recent_blockhash()?;
 
     let tx = Transaction::new_signed_with_payer(

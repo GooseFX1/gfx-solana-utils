@@ -4,7 +4,10 @@ mod testing;
 
 pub use anchor_extensions::{AnchorClientErrorExt, GetProgramAccounts};
 pub use decimals::DecimalApply;
-pub use testing::{admin_wallet, create_ata, create_token, create_wallet, mint_to, user_wallet};
+pub use testing::{
+    admin_wallet, create_ata, create_token, create_wallet, mint_to, rpc_url, set_rpc_url,
+    user_wallet,
+};
 
 use anchor_lang::prelude::*;
 use anyhow::{anyhow, Error};
