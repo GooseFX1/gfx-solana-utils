@@ -43,7 +43,7 @@ pub fn rpc_url() -> &'static str {
 pub fn admin_wallet(airdrop: f64) -> &'static Keypair {
     ADMIN_WALLET.get_or_try_init(|| -> Result<_, Error> {
         if let Ok(wallet) = env::var("ADMIN_WALLET") {
-            return Ok(load_keypair(&wallet));
+            return load_keypair(&wallet);
         }
         create_wallet(airdrop)
     })?
@@ -53,7 +53,7 @@ pub fn admin_wallet(airdrop: f64) -> &'static Keypair {
 pub fn user_wallet(airdrop: f64) -> &'static Keypair {
     USER_WALLET.get_or_try_init(|| -> Result<_, Error> {
         if let Ok(wallet) = env::var("USER_WALLET") {
-            return Ok(load_keypair(&wallet));
+            return load_keypair(&wallet);
         }
         create_wallet(airdrop)
     })?

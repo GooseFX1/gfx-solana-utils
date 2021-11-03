@@ -35,6 +35,7 @@ pub fn sort_token_pair((token_a, token_b): (Pubkey, Pubkey)) -> (Pubkey, Pubkey)
     }
 }
 
+#[throws(Error)]
 pub fn load_keypair(src: &str) -> Keypair {
     let maybe_keypair = shellexpand::full(&src)
         .map_err(|e| anyhow!(e))
@@ -43,6 +44,6 @@ pub fn load_keypair(src: &str) -> Keypair {
 
     match maybe_keypair {
         Ok(keypair) => keypair,
-        Err(_) => Keypair::from_base58_string(src),
+        Err(_) => Keypair::from_bytes(&bs58::decode(src).into_vec()?)?,
     }
 }
