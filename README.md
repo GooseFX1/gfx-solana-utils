@@ -1,4 +1,4 @@
-# gfx-solana-utils
+# gfx-solana-utils ![build](https://img.shields.io/github/workflow/status/GooseFX1/gfx-solana-utils/ci)
 
 This repo contains some utility functions/traits for calling Solana smart contracts.
 
