@@ -1,5 +1,6 @@
 use crate::decimals::ApplyDecimal;
 use crate::load_keypair;
+use anchor_client::Cluster;
 use anchor_lang::prelude::*;
 use anyhow::Error;
 use fehler::{throw, throws};
@@ -37,6 +38,18 @@ pub fn rpc_url() -> &'static str {
             env::var("RPC_URL").unwrap_or_else(|_| "https://api.devnet.solana.com".to_string())
         })
         .as_str()
+}
+
+pub fn commitment_level() -> CommitmentConfig {
+    env::var("SOLANA_COMMITMENT_LEVEL")
+        .map(|l| l.parse().unwrap())
+        .unwrap_or_else(|_| CommitmentConfig::finalized())
+}
+
+pub fn cluster() -> Cluster {
+    env::var("SOLANA_CLUSTER")
+        .map(|c| c.parse().unwrap())
+        .unwrap_or_else(|_| Cluster::Devnet)
 }
 
 #[throws(Error)]
