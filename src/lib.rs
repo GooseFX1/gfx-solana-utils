@@ -6,7 +6,7 @@ pub use anchor_extensions::{AnchorClientErrorExt, GetProgramAccounts};
 pub use decimals::ApplyDecimal;
 pub use testing::{
     admin_wallet, cluster, commitment_level, create_ata, create_token, create_wallet, mint_to,
-    rpc_url, set_rpc_url, user_wallet,
+    user_wallet,
 };
 
 use anchor_lang::prelude::*;
