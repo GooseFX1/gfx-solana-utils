@@ -65,7 +65,7 @@ where
     if (0..20).contains(&code) {
         let e: spl_token::error::TokenError = unsafe { std::mem::transmute(code as u8) };
         format!("SPL Error: {}", e)
-    } else if (100..300).contains(&code) {
+    } else if (100..anchor_lang::__private::ERROR_CODE_OFFSET).contains(&code) {
         let e: anchor_lang::__private::ErrorCode = unsafe { std::mem::transmute(code) };
         format!("Anchor Error: {}", e)
     } else if let Ok(e) = TryInto::<E>::try_into(code) {
