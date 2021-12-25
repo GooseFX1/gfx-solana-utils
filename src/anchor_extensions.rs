@@ -78,28 +78,34 @@ where
 pub trait GetProgramAccounts {
     fn get_program_accounts<T: Default + Discriminator + AnchorSerialize + AccountDeserialize>(
         &self,
+        filters: &[Memcmp],
     ) -> Result<Vec<(Pubkey, T)>, Error>;
 }
 
 impl GetProgramAccounts for Program {
     fn get_program_accounts<T: Default + Discriminator + AnchorSerialize + AccountDeserialize>(
         &self,
+        filters: &[Memcmp],
     ) -> Result<Vec<(Pubkey, T)>, Error> {
         let rpc_client = self.rpc();
+
+        let mut filters_ = vec![
+            RpcFilterType::DataSize(8 + T::default().try_to_vec().unwrap().len() as u64),
+            RpcFilterType::Memcmp(Memcmp {
+                offset: 0,
+                bytes: MemcmpEncodedBytes::Base58(bs58::encode(&T::discriminator()).into_string()),
+                encoding: Some(MemcmpEncoding::Binary),
+            }),
+        ];
+
+        for f in filters {
+            filters_.push(RpcFilterType::Memcmp(f.clone()))
+        }
 
         let accounts = rpc_client.get_program_accounts_with_config(
             &self.id(),
             RpcProgramAccountsConfig {
-                filters: Some(vec![
-                    RpcFilterType::DataSize(8 + T::default().try_to_vec().unwrap().len() as u64),
-                    RpcFilterType::Memcmp(Memcmp {
-                        offset: 0,
-                        bytes: MemcmpEncodedBytes::Base58(
-                            bs58::encode(&T::discriminator()).into_string(),
-                        ),
-                        encoding: Some(MemcmpEncoding::Binary),
-                    }),
-                ]),
+                filters: Some(filters_),
                 account_config: RpcAccountInfoConfig {
                     encoding: Some(UiAccountEncoding::Base64),
                     ..Default::default()
