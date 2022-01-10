@@ -11,8 +11,8 @@ version = "0.3.1"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anchor-client = "0.19"
-anchor-lang = "0.19"
+anchor-client = "0.20"
+anchor-lang = "0.20"
 anyhow = "1"
 bs58 = "0.4"
 fehler = "1"
