@@ -2,6 +2,7 @@ use anchor_client::{ClientError as AnchorClientError, Program};
 use anchor_lang::prelude::*;
 use anchor_lang::Discriminator;
 use anyhow::{anyhow, Error};
+use bytemuck::{from_bytes, Pod};
 use solana_account_decoder::UiAccountEncoding;
 use solana_client::{
     client_error::{ClientError, ClientErrorKind},
@@ -12,6 +13,7 @@ use solana_client::{
 };
 use solana_sdk::{instruction::InstructionError, transaction::TransactionError};
 use std::convert::TryInto;
+use std::mem::size_of;
 
 pub trait AnchorClientErrorExt {
     fn code(&self) -> Option<u32>;
@@ -80,6 +82,11 @@ pub trait GetProgramAccounts {
         &self,
         filters: &[Memcmp],
     ) -> Result<Vec<(Pubkey, T)>, Error>;
+
+    fn get_program_accounts_zero_copy<T: Default + Discriminator + Pod>(
+        &self,
+        filters: &[Memcmp],
+    ) -> Result<Vec<(Pubkey, T)>, Error>;
 }
 
 impl GetProgramAccounts for Program {
@@ -118,6 +125,44 @@ impl GetProgramAccounts for Program {
             .into_iter()
             .map(|(k, acc)| T::try_deserialize(&mut &*acc.data).map(|acc| (k, acc)))
             .collect::<Result<Vec<_>, _>>()?;
+        Ok(accounts)
+    }
+
+    fn get_program_accounts_zero_copy<T: Default + Discriminator + Pod>(
+        &self,
+        filters: &[Memcmp],
+    ) -> Result<Vec<(Pubkey, T)>, Error> {
+        let rpc_client = self.rpc();
+
+        let mut filters_ = vec![
+            RpcFilterType::DataSize(8 + size_of::<T>() as u64),
+            RpcFilterType::Memcmp(Memcmp {
+                offset: 0,
+                bytes: MemcmpEncodedBytes::Base58(bs58::encode(&T::discriminator()).into_string()),
+                encoding: Some(MemcmpEncoding::Binary),
+            }),
+        ];
+
+        for f in filters {
+            filters_.push(RpcFilterType::Memcmp(f.clone()))
+        }
+
+        let accounts = rpc_client.get_program_accounts_with_config(
+            &self.id(),
+            RpcProgramAccountsConfig {
+                filters: Some(filters_),
+                account_config: RpcAccountInfoConfig {
+                    encoding: Some(UiAccountEncoding::Base64),
+                    ..Default::default()
+                },
+                with_context: None,
+            },
+        )?;
+
+        let accounts = accounts
+            .into_iter()
+            .map(|(k, acc)| (k, from_bytes::<T>(&acc.data[8..]).clone()))
+            .collect::<Vec<_>>();
         Ok(accounts)
     }
 }
