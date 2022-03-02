@@ -67,8 +67,8 @@ where
     if (0..20).contains(&code) {
         let e: spl_token::error::TokenError = unsafe { std::mem::transmute(code as u8) };
         format!("SPL Error: {}", e)
-    } else if (100..anchor_lang::__private::ERROR_CODE_OFFSET).contains(&code) {
-        let e: anchor_lang::__private::ErrorCode = unsafe { std::mem::transmute(code) };
+    } else if (100..ERROR_CODE_OFFSET).contains(&code) {
+        let e: ErrorCode = unsafe { std::mem::transmute(code) };
         format!("Anchor Error: {}", e)
     } else if let Ok(e) = TryInto::<E>::try_into(code) {
         format!("GFX Error: {}", e)
@@ -81,19 +81,19 @@ pub trait GetProgramAccounts {
     fn get_program_accounts<T: Default + Discriminator + AnchorSerialize + AccountDeserialize>(
         &self,
         filters: &[Memcmp],
-    ) -> Result<Vec<(Pubkey, T)>, Error>;
+    ) -> std::result::Result<Vec<(Pubkey, T)>, Error>;
 
     fn get_program_accounts_zero_copy<T: Default + Discriminator + Pod>(
         &self,
         filters: &[Memcmp],
-    ) -> Result<Vec<(Pubkey, T)>, Error>;
+    ) -> std::result::Result<Vec<(Pubkey, T)>, Error>;
 }
 
 impl GetProgramAccounts for Program {
     fn get_program_accounts<T: Default + Discriminator + AnchorSerialize + AccountDeserialize>(
         &self,
         filters: &[Memcmp],
-    ) -> Result<Vec<(Pubkey, T)>, Error> {
+    ) -> std::result::Result<Vec<(Pubkey, T)>, Error> {
         let rpc_client = self.rpc();
 
         let mut filters_ = vec![
@@ -124,14 +124,14 @@ impl GetProgramAccounts for Program {
         let accounts = accounts
             .into_iter()
             .map(|(k, acc)| T::try_deserialize(&mut &*acc.data).map(|acc| (k, acc)))
-            .collect::<Result<Vec<_>, _>>()?;
+            .collect::<std::result::Result<Vec<_>, _>>()?;
         Ok(accounts)
     }
 
     fn get_program_accounts_zero_copy<T: Default + Discriminator + Pod>(
         &self,
         filters: &[Memcmp],
-    ) -> Result<Vec<(Pubkey, T)>, Error> {
+    ) -> std::result::Result<Vec<(Pubkey, T)>, Error> {
         let rpc_client = self.rpc();
 
         let mut filters_ = vec![

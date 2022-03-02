@@ -41,7 +41,7 @@ pub fn cluster() -> Cluster {
 
 #[throws(Error)]
 pub fn admin_wallet(airdrop: f64) -> &'static Keypair {
-    ADMIN_WALLET.get_or_try_init(|| -> Result<_, Error> {
+    ADMIN_WALLET.get_or_try_init(|| -> std::result::Result<_, Error> {
         if let Ok(wallet) = env::var("ADMIN_WALLET") {
             return load_keypair(&wallet);
         }
@@ -51,7 +51,7 @@ pub fn admin_wallet(airdrop: f64) -> &'static Keypair {
 
 #[throws(Error)]
 pub fn user_wallet(airdrop: f64) -> &'static Keypair {
-    USER_WALLET.get_or_try_init(|| -> Result<_, Error> {
+    USER_WALLET.get_or_try_init(|| -> std::result::Result<_, Error> {
         if let Ok(wallet) = env::var("USER_WALLET") {
             return load_keypair(&wallet);
         }
