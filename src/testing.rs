@@ -81,7 +81,7 @@ pub fn create_wallet(airdrop: f64) -> Keypair {
 #[throws(Error)]
 pub fn create_token(authority: &Keypair) -> Pubkey {
     let rpc = RpcClient::new_with_commitment(cluster().url().to_string(), commitment_level());
-    let bhash = rpc.get_latest_blockhash()?;
+    let bhash = rpc.get_recent_blockhash()?.0;
 
     let mint = Keypair::new();
     let ix0 = create_account(
@@ -109,7 +109,7 @@ pub fn create_token(authority: &Keypair) -> Pubkey {
 #[throws(Error)]
 pub fn mint_to<N: AsPrimitive<f64>>(mint: Pubkey, authority: &Keypair, to: Pubkey, amount: N) {
     let rpc = RpcClient::new_with_commitment(cluster().url().to_string(), commitment_level());
-    let bhash = rpc.get_latest_blockhash()?;
+    let bhash = rpc.get_recent_blockhash()?.0;
 
     let mut ixs = vec![];
 
@@ -146,7 +146,7 @@ pub fn mint_to<N: AsPrimitive<f64>>(mint: Pubkey, authority: &Keypair, to: Pubke
 #[throws(Error)]
 pub fn create_ata(mint: Pubkey, authority: &Keypair, to: Pubkey) {
     let rpc = RpcClient::new_with_commitment(cluster().url().to_string(), commitment_level());
-    let bhash = rpc.get_latest_blockhash()?;
+    let bhash = rpc.get_recent_blockhash()?.0;
 
     let tx = Transaction::new_signed_with_payer(
         &[create_associated_token_account(
