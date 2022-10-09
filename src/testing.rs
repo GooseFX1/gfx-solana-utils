@@ -122,6 +122,7 @@ pub fn mint_to<N: AsPrimitive<f64>>(mint: Pubkey, authority: &Keypair, to: Pubke
                     &authority.pubkey(),
                     &to,
                     &mint,
+                    &spl_token::ID,
                 ));
             }
             _ => throw!(e),
@@ -155,6 +156,7 @@ pub fn create_ata(mint: Pubkey, authority: &Keypair, to: Pubkey) {
             &authority.pubkey(),
             &to,
             &mint,
+            &spl_token::ID,
         )],
         Some(&authority.pubkey()),
         &[authority],
