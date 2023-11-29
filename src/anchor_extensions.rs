@@ -7,13 +7,15 @@ use solana_account_decoder::UiAccountEncoding;
 use solana_client::{
     client_error::{ClientError, ClientErrorKind},
     rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig},
-    rpc_filter::{Memcmp, MemcmpEncodedBytes, MemcmpEncoding, RpcFilterType},
+    rpc_filter::{Memcmp, MemcmpEncodedBytes, RpcFilterType},
     rpc_request::{RpcError, RpcResponseErrorData},
     rpc_response::RpcSimulateTransactionResult,
 };
+use solana_sdk::signer::Signer;
 use solana_sdk::{instruction::InstructionError, transaction::TransactionError};
 use std::convert::TryInto;
 use std::mem::size_of;
+use std::ops::Deref;
 
 pub trait AnchorClientErrorExt {
     fn code(&self) -> Option<u32>;
@@ -89,7 +91,11 @@ pub trait GetProgramAccounts {
     ) -> std::result::Result<Vec<(Pubkey, T)>, Error>;
 }
 
-impl GetProgramAccounts for Program {
+impl<C, S> GetProgramAccounts for Program<C>
+where
+    C: Clone + Deref<Target = S>,
+    S: Signer,
+{
     fn get_program_accounts<T: Default + Discriminator + AnchorSerialize + AccountDeserialize>(
         &self,
         filters: &[Memcmp],
@@ -98,11 +104,10 @@ impl GetProgramAccounts for Program {
 
         let mut filters_ = vec![
             RpcFilterType::DataSize(8 + T::default().try_to_vec().unwrap().len() as u64),
-            RpcFilterType::Memcmp(Memcmp {
-                offset: 0,
-                bytes: MemcmpEncodedBytes::Base58(bs58::encode(&T::discriminator()).into_string()),
-                encoding: Some(MemcmpEncoding::Binary),
-            }),
+            RpcFilterType::Memcmp(Memcmp::new(
+                0,
+                MemcmpEncodedBytes::Base58(bs58::encode(&T::discriminator()).into_string()),
+            )),
         ];
 
         for f in filters {
@@ -136,11 +141,10 @@ impl GetProgramAccounts for Program {
 
         let mut filters_ = vec![
             RpcFilterType::DataSize(8 + size_of::<T>() as u64),
-            RpcFilterType::Memcmp(Memcmp {
-                offset: 0,
-                bytes: MemcmpEncodedBytes::Base58(bs58::encode(&T::discriminator()).into_string()),
-                encoding: Some(MemcmpEncoding::Binary),
-            }),
+            RpcFilterType::Memcmp(Memcmp::new(
+                0,
+                MemcmpEncodedBytes::Base58(bs58::encode(&T::discriminator()).into_string()),
+            )),
         ];
 
         for f in filters {
